@@ -2,22 +2,42 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>VORTEX - Loja Online</title>
+    <title>VORTEX - Store</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
-    <nav class="navbar" style="text-align: center; padding: 20px; background: #1a1a1a; border-bottom: 2px solid #ff0000; margin-bottom: 20px;">
-        <h1 style="margin: 0;">VORTEX - Loja</h1>
-    </nav>
+    <div id="store-content" style="display:none">
+        <header class="navbar">VORTEX STORE</header>
+        <div id="products-grid" class="grid"></div>
+        
+        <div class="chat-box">
+            <div id="messages"></div>
+            <input type="text" id="chat-input" placeholder="Dúvidas? Chame aqui...">
+        </div>
+    </div>
 
-    <main class="container">
-        <h2>Confira Nossos Produtos</h2>
-        <div id="lista-produtos" class="grid-produtos">
-            </div>
-    </main>
+    <div id="login-screen">
+        <button onclick="loginGoogle()" class="btn-main">Entrar com Google para Comprar</button>
+    </div>
 
     <script src="app.js"></script>
+    <script>
+        function loginGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider);
+        }
+
+        auth.onAuthStateChanged(user => {
+            if(user) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('store-content').style.display = 'block';
+                loadStore();
+                startChat(user);
+            }
+        });
+    </script>
 </body>
 </html>
