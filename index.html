@@ -2,150 +2,63 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>VORTEX - Painel Administrativo</title>
+    <title>VORTEX - Admin Panel</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 </head>
-<body class="admin-body">
-    <h1>Painel Administrativo VORTEX</h1>
-    
-    <section class="add-product">
-        <h3>Adicionar Novo Produto</h3>
-        <input type="text" id="prod-nome" placeholder="Nome do Produto" required>
-        <input type="number" id="prod-preco" placeholder="Preço (R$)" required>
-        <input type="text" id="prod-img" placeholder="Link da Imagem (URL)" required>
-        <button id="btn-salvar">Adicionar à Loja</button>
-    </section>
+<body class="admin-ui">
+    <div class="panel">
+        <div class="header">VORTEX ADMIN <button id="copy-link">Copiar Link da Loja</button></div>
+        
+        <section class="upload-section">
+            <input type="text" id="p-name" placeholder="Nome do Produto">
+            <input type="number" id="p-price" placeholder="Preço">
+            <label class="file-label"> Selecionar Foto
+                <input type="file" id="p-file" accept="image/*" style="display:none">
+            </label>
+            <button id="p-upload" class="btn-main">POSTAR PRODUTO</button>
+        </section>
 
-    <section>
-        <h3>Gerenciar Produtos</h3>
-        <div id="admin-lista-produtos" class="grid-produtos">
-            </div>
-    </section>
+        <section class="chat-section">
+            <h3>Mensagens dos Clientes</h3>
+            <div id="admin-chat-list"></div>
+        </section>
 
-    <section style="text-align: center;">
-        <button id="login-google">Acessar com Google</button>
-        <div id="user-info" style="display: none;">
-            <p>Conectado como: <span id="user-name"></span></p>
-            <button id="logout">Sair</button>
-            <hr>
-            <h3>Link da Loja</h3>
-            <p>Copie e compartilhe o link abaixo para os seus clientes:</p>
-            <input type="text" id="store-url" readonly style="color: #ff0000; text-align: center;">
-        </div>
-    </section>
+        <section class="inventory">
+            <h3>Produtos Ativos</h3>
+            <div id="admin-product-list"></div>
+        </section>
+    </div>
 
     <script src="app.js"></script>
     <script>
-        // Lógica específica para o Admin
-        const adminEmail = "SEU_EMAIL_AQUI"; // Substitua pelo seu email do Google
-
-        // Autenticação com Google
-        const btnLogin = document.getElementById('login-google');
-        btnLogin.onclick = () => {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider).then(result => {
-                // Opcional: Verificar se o usuário logado é o administrador
-                // if (result.user.email !== adminEmail) {
-                //     alert("Acesso negado.");
-                //     auth.signOut();
-                // }
-            });
+        // Função para Copiar Link
+        document.getElementById('copy-link').onclick = () => {
+            const url = window.location.href.replace('index.html', 'loja.html');
+            navigator.clipboard.writeText(url);
+            alert("Link da loja copiado!");
         };
 
-        const btnLogout = document.getElementById('logout');
-        btnLogout.onclick = () => {
-            auth.signOut();
-        };
+        // Upload com Arquivo Real
+        document.getElementById('p-upload').onclick = async () => {
+            const file = document.getElementById('p-file').files[0];
+            const name = document.getElementById('p-name').value;
+            const price = document.getElementById('p-price').value;
 
-        // Monitorar estado da autenticação
-        auth.onAuthStateChanged(user => {
-            const authSection = document.getElementById('login-google');
-            const userInfoSection = document.getElementById('user-info');
-            const userNameSpan = document.getElementById('user-name');
-            const storeUrlInput = document.getElementById('store-url');
+            if(!file || !name) return alert("Preencha tudo!");
 
-            if (user) {
-                authSection.style.display = 'none';
-                userInfoSection.style.display = 'block';
-                userNameSpan.innerText = user.displayName;
-                
-                // Gerar a URL da loja (substitua pelo seu domínio quando estiver online)
-                const baseUrl = window.location.origin;
-                storeUrlInput.value = `${baseUrl}/loja.html`;
+            const storageRef = firebase.storage().ref('produtos/' + file.name);
+            await storageRef.put(file);
+            const url = await storageRef.getDownloadURL();
 
-                carregarProdutosAdmin(); // Carregar produtos apenas se autenticado
-            } else {
-                authSection.style.display = 'block';
-                userInfoSection.style.display = 'none';
-                document.getElementById('admin-lista-produtos').innerHTML = ""; // Limpar lista se não autenticado
-            }
-        });
-
-        // Adicionar Produto
-        document.getElementById('btn-salvar').addEventListener('click', () => {
-            const user = auth.currentUser;
-            if (!user) {
-                alert("Por favor, faça login para adicionar produtos.");
-                return;
-            }
-
-            const nome = document.getElementById('prod-nome').value;
-            const preco = document.getElementById('prod-preco').value;
-            const img = document.getElementById('prod-img').value;
-
-            if (nome && preco && img) {
-                db.collection("produtos").add({
-                    nome: nome,
-                    preco: parseFloat(preco),
-                    imagem: img,
-                    data: firebase.firestore.FieldValue.serverTimestamp()
-                }).then(() => {
-                    alert("Produto enviado para a loja!");
-                    // Limpar campos
-                    document.getElementById('prod-nome').value = "";
-                    document.getElementById('prod-preco').value = "";
-                    document.getElementById('prod-img').value = "";
-                }).catch(error => {
-                    console.error("Erro ao adicionar produto:", error);
-                    alert("Ocorreu um erro ao adicionar o produto.");
-                });
-            } else {
-                alert("Por favor, preencha todos os campos.");
-            }
-        });
-
-        // Carregar Produtos para o Admin (com opção de remoção)
-        function carregarProdutosAdmin() {
-            const listaAdminContainer = document.getElementById('admin-lista-produtos');
-            db.collection("produtos").orderBy("data", "desc").onSnapshot(snapshot => {
-                listaAdminContainer.innerHTML = "";
-                snapshot.forEach(doc => {
-                    const p = doc.data();
-                    listaAdminContainer.innerHTML += `
-                        <div class="card">
-                            <img src="${p.imagem}" width="100%">
-                            <h3>${p.nome}</h3>
-                            <p>R$ ${p.preco.toFixed(2)}</p>
-                            <button class="btn-delete" onclick="removerProduto('${doc.id}')">Remover</button>
-                        </div>
-                    `;
-                });
+            db.collection("produtos").add({
+                nome: name, preco: price, img: url, time: Date.now()
             });
-        }
-
-        function removerProduto(docId) {
-            if (confirm("Tem certeza que deseja remover este produto?")) {
-                db.collection("produtos").doc(docId).delete().then(() => {
-                    alert("Produto removido!");
-                }).catch(error => {
-                    console.error("Erro ao remover produto:", error);
-                    alert("Ocorreu um erro ao remover o produto.");
-                });
-            }
-        }
+            alert("Produto enviado com foto!");
+        };
     </script>
 </body>
 </html>
