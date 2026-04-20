@@ -6,38 +6,105 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
-    <div id="store-content" style="display:none">
-        <header class="navbar">VORTEX STORE</header>
-        <div id="products-grid" class="grid"></div>
-        
-        <div class="chat-box">
-            <div id="messages"></div>
-            <input type="text" id="chat-input" placeholder="Dúvidas? Chame aqui...">
+    <div id="login-screen" class="flex-center">
+        <div class="panel login-panel">
+            <div class="header">VORTEX STORE</div>
+            <p>Para acessar a loja e o suporte, por favor identifique-se.</p>
+            <button onclick="loginGoogleCliente()" class="btn-main">Entrar com Google</button>
         </div>
     </div>
 
-    <div id="login-screen">
-        <button onclick="loginGoogle()" class="btn-main">Entrar com Google para Comprar</button>
+    <div id="store-content" style="display:none">
+        <header class="navbar">
+            <h1>VORTEX STORE</h1>
+            <button id="client-logout" class="btn-secondary">Sair</button>
+        </header>
+        
+        <main class="container">
+            <h2>Nossos Produtos</h2>
+            <div id="products-grid" class="grid">
+                </div>
+        </main>
+        
+        <div class="chat-box" id="chat-flutuante">
+            <div class="chat-header">Suporte VORTEX</div>
+            <div id="messages" class="chat-messages">
+                <p class="bot-msg">Olá! Como podemos ajudar hoje?</p>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Digite sua dúvida...">
+                <button id="send-msg">Enviar</button>
+            </div>
+        </div>
     </div>
 
     <script src="app.js"></script>
     <script>
-        function loginGoogle() {
+        // --- LÓGICA DE AUTENTICAÇÃO (CLIENTE) ---
+        function loginGoogleCliente() {
             const provider = new firebase.auth.GoogleAuthProvider();
             auth.signInWithPopup(provider);
         }
+
+        document.getElementById('client-logout').onclick = () => {
+            auth.signOut();
+        };
 
         auth.onAuthStateChanged(user => {
             if(user) {
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('store-content').style.display = 'block';
-                loadStore();
-                startChat(user);
+                carregarLojaEstatica();
+                // O chat é apenas visual, não precisa iniciar lógica real
+            } else {
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('store-content').style.display = 'none';
             }
         });
+
+        // --- CARREGAR LOJA (ESTÁTICA) ---
+        function carregarLojaEstatica() {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = "";
+            // Usa o array 'produtosEstaticos' definido no app.js
+            produtosEstaticos.forEach(p => {
+                grid.innerHTML += `
+                    <div class="product-card">
+                        <img src="${p.img}" alt="${p.nome}">
+                        <h4>${p.nome}</h4>
+                        <p class="price">R$ ${p.preco.toFixed(2)}</p>
+                        <a href="${p.link_compra}" target="_blank" class="btn-main btn-buy">COMPRAR AGORA</a>
+                    </div>`;
+            });
+        }
+
+        // --- LÓGICA DO CHAT FLUTUANTE (APENAS VISUAL) ---
+        const inputMsg = document.getElementById('chat-input');
+        const btnSend = document.getElementById('send-msg');
+        const messagesDiv = document.getElementById('messages');
+
+        btnSend.onclick = sendMessage;
+        inputMsg.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        function sendMessage() {
+            const text = inputMsg.value;
+            if(text.trim() === "") return;
+
+            // Adiciona mensagem do usuário
+            messagesDiv.innerHTML += `<p class="user-msg">${text}</p>`;
+            inputMsg.value = "";
+            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll para o final
+
+            // Simula resposta automática do "bot" após 1s
+            setTimeout(() => {
+                messagesDiv.innerHTML += `<p class="bot-msg">Entendi. Um atendente visual irá analisar sua mensagem em breve (Simulação).</p>`;
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }, 1000);
+        }
     </script>
 </body>
 </html>
