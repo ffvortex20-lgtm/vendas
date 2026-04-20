@@ -1,27 +1,30 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VORTEX - Sua Loja Online</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>VORTEX - Loja</title>
+    <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
-
-    <header>
+    <nav class="navbar">
         <h1>VORTEX</h1>
-        <nav>
-            <button id="loginBtn">Entrar com Google</button>
-            <button id="logoutBtn" style="display:none;">Sair</button>
-            <span id="userInfo"></span>
-        </nav>
-    </header>
+        <div id="auth-section">
+            <button id="login-google">Login com Google</button>
+            <div id="user-info" style="display: none;">
+                <span id="user-name"></span>
+                <button id="logout">Sair</button>
+            </div>
+        </div>
+    </nav>
 
-    <main id="produtos-container">
-        </main>
+    <main class="container">
+        <h2>Nossos Produtos</h2>
+        <div id="lista-produtos" class="grid-produtos">
+            </div>
+    </main>
 
     <script src="app.js"></script>
 </body>
