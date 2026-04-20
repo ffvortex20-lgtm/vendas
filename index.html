@@ -2,30 +2,150 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>VORTEX - Loja</title>
+    <title>VORTEX - Painel Administrativo</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
-<body>
-    <nav class="navbar">
-        <h1>VORTEX</h1>
-        <div id="auth-section">
-            <button id="login-google">Login com Google</button>
-            <div id="user-info" style="display: none;">
-                <span id="user-name"></span>
-                <button id="logout">Sair</button>
-            </div>
-        </div>
-    </nav>
+<body class="admin-body">
+    <h1>Painel Administrativo VORTEX</h1>
+    
+    <section class="add-product">
+        <h3>Adicionar Novo Produto</h3>
+        <input type="text" id="prod-nome" placeholder="Nome do Produto" required>
+        <input type="number" id="prod-preco" placeholder="Preço (R$)" required>
+        <input type="text" id="prod-img" placeholder="Link da Imagem (URL)" required>
+        <button id="btn-salvar">Adicionar à Loja</button>
+    </section>
 
-    <main class="container">
-        <h2>Nossos Produtos</h2>
-        <div id="lista-produtos" class="grid-produtos">
+    <section>
+        <h3>Gerenciar Produtos</h3>
+        <div id="admin-lista-produtos" class="grid-produtos">
             </div>
-    </main>
+    </section>
+
+    <section style="text-align: center;">
+        <button id="login-google">Acessar com Google</button>
+        <div id="user-info" style="display: none;">
+            <p>Conectado como: <span id="user-name"></span></p>
+            <button id="logout">Sair</button>
+            <hr>
+            <h3>Link da Loja</h3>
+            <p>Copie e compartilhe o link abaixo para os seus clientes:</p>
+            <input type="text" id="store-url" readonly style="color: #ff0000; text-align: center;">
+        </div>
+    </section>
 
     <script src="app.js"></script>
+    <script>
+        // Lógica específica para o Admin
+        const adminEmail = "SEU_EMAIL_AQUI"; // Substitua pelo seu email do Google
+
+        // Autenticação com Google
+        const btnLogin = document.getElementById('login-google');
+        btnLogin.onclick = () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).then(result => {
+                // Opcional: Verificar se o usuário logado é o administrador
+                // if (result.user.email !== adminEmail) {
+                //     alert("Acesso negado.");
+                //     auth.signOut();
+                // }
+            });
+        };
+
+        const btnLogout = document.getElementById('logout');
+        btnLogout.onclick = () => {
+            auth.signOut();
+        };
+
+        // Monitorar estado da autenticação
+        auth.onAuthStateChanged(user => {
+            const authSection = document.getElementById('login-google');
+            const userInfoSection = document.getElementById('user-info');
+            const userNameSpan = document.getElementById('user-name');
+            const storeUrlInput = document.getElementById('store-url');
+
+            if (user) {
+                authSection.style.display = 'none';
+                userInfoSection.style.display = 'block';
+                userNameSpan.innerText = user.displayName;
+                
+                // Gerar a URL da loja (substitua pelo seu domínio quando estiver online)
+                const baseUrl = window.location.origin;
+                storeUrlInput.value = `${baseUrl}/loja.html`;
+
+                carregarProdutosAdmin(); // Carregar produtos apenas se autenticado
+            } else {
+                authSection.style.display = 'block';
+                userInfoSection.style.display = 'none';
+                document.getElementById('admin-lista-produtos').innerHTML = ""; // Limpar lista se não autenticado
+            }
+        });
+
+        // Adicionar Produto
+        document.getElementById('btn-salvar').addEventListener('click', () => {
+            const user = auth.currentUser;
+            if (!user) {
+                alert("Por favor, faça login para adicionar produtos.");
+                return;
+            }
+
+            const nome = document.getElementById('prod-nome').value;
+            const preco = document.getElementById('prod-preco').value;
+            const img = document.getElementById('prod-img').value;
+
+            if (nome && preco && img) {
+                db.collection("produtos").add({
+                    nome: nome,
+                    preco: parseFloat(preco),
+                    imagem: img,
+                    data: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => {
+                    alert("Produto enviado para a loja!");
+                    // Limpar campos
+                    document.getElementById('prod-nome').value = "";
+                    document.getElementById('prod-preco').value = "";
+                    document.getElementById('prod-img').value = "";
+                }).catch(error => {
+                    console.error("Erro ao adicionar produto:", error);
+                    alert("Ocorreu um erro ao adicionar o produto.");
+                });
+            } else {
+                alert("Por favor, preencha todos os campos.");
+            }
+        });
+
+        // Carregar Produtos para o Admin (com opção de remoção)
+        function carregarProdutosAdmin() {
+            const listaAdminContainer = document.getElementById('admin-lista-produtos');
+            db.collection("produtos").orderBy("data", "desc").onSnapshot(snapshot => {
+                listaAdminContainer.innerHTML = "";
+                snapshot.forEach(doc => {
+                    const p = doc.data();
+                    listaAdminContainer.innerHTML += `
+                        <div class="card">
+                            <img src="${p.imagem}" width="100%">
+                            <h3>${p.nome}</h3>
+                            <p>R$ ${p.preco.toFixed(2)}</p>
+                            <button class="btn-delete" onclick="removerProduto('${doc.id}')">Remover</button>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        function removerProduto(docId) {
+            if (confirm("Tem certeza que deseja remover este produto?")) {
+                db.collection("produtos").doc(docId).delete().then(() => {
+                    alert("Produto removido!");
+                }).catch(error => {
+                    console.error("Erro ao remover produto:", error);
+                    alert("Ocorreu um erro ao remover o produto.");
+                });
+            }
+        }
+    </script>
 </body>
 </html>
