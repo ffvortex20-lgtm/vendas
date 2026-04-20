@@ -7,58 +7,99 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 </head>
 <body class="admin-ui">
     <div class="panel">
-        <div class="header">VORTEX ADMIN <button id="copy-link">Copiar Link da Loja</button></div>
+        <div class="header">VORTEX ADMIN <button id="copy-admin-link">Copiar Link do Painel</button></div>
         
-        <section class="upload-section">
-            <input type="text" id="p-name" placeholder="Nome do Produto">
-            <input type="number" id="p-price" placeholder="Preço">
-            <label class="file-label"> Selecionar Foto
-                <input type="file" id="p-file" accept="image/*" style="display:none">
-            </label>
-            <button id="p-upload" class="btn-main">POSTAR PRODUTO</button>
+        <section style="text-align: center; margin-bottom: 20px;">
+            <button id="login-google" class="btn-main">Entrar com Google (Admin)</button>
+            <div id="user-info" style="display: none;">
+                <p>Bem-vindo, <span id="user-name"></span></p>
+                <button id="logout" class="btn-secondary">Sair</button>
+            </div>
         </section>
 
         <section class="chat-section">
-            <h3>Mensagens dos Clientes</h3>
-            <div id="admin-chat-list"></div>
+            <h3>Mensagens dos Clientes (Visualização)</h3>
+            <div id="admin-chat-list" class="placeholder-chat">
+                <p><em>Autentique-se para ver as mensagens simuladas...</em></p>
+            </div>
         </section>
 
         <section class="inventory">
-            <h3>Produtos Ativos</h3>
-            <div id="admin-product-list"></div>
+            <h3>Produtos Cadastrados (Visualização Estática)</h3>
+            <div id="admin-product-list" class="grid-admin">
+                </div>
         </section>
     </div>
 
     <script src="app.js"></script>
     <script>
-        // Função para Copiar Link
-        document.getElementById('copy-link').onclick = () => {
-            const url = window.location.href.replace('index.html', 'loja.html');
-            navigator.clipboard.writeText(url);
-            alert("Link da loja copiado!");
-        };
-
-        // Upload com Arquivo Real
-        document.getElementById('p-upload').onclick = async () => {
-            const file = document.getElementById('p-file').files[0];
-            const name = document.getElementById('p-name').value;
-            const price = document.getElementById('p-price').value;
-
-            if(!file || !name) return alert("Preencha tudo!");
-
-            const storageRef = firebase.storage().ref('produtos/' + file.name);
-            await storageRef.put(file);
-            const url = await storageRef.getDownloadURL();
-
-            db.collection("produtos").add({
-                nome: name, preco: price, img: url, time: Date.now()
+        // --- FUNÇÃO COPIAR LINK DO PAINEL ---
+        document.getElementById('copy-admin-link').onclick = () => {
+            const currentUrl = window.location.href; // Copia a URL atual (index.html)
+            navigator.clipboard.writeText(currentUrl).then(() => {
+                alert("Link do painel administrativo copiado!");
+            }).catch(err => {
+                console.error('Erro ao copiar: ', err);
             });
-            alert("Produto enviado com foto!");
         };
+
+        // --- LÓGICA DE AUTENTICAÇÃO (ADMIN) ---
+        const btnLogin = document.getElementById('login-google');
+        const btnLogout = document.getElementById('logout');
+        const userInfo = document.getElementById('user-info');
+        const userName = document.getElementById('user-name');
+        const chatList = document.getElementById('admin-chat-list');
+
+        btnLogin.onclick = () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider);
+        };
+
+        btnLogout.onclick = () => {
+            auth.signOut();
+        };
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                btnLogin.style.display = 'none';
+                userInfo.style.display = 'block';
+                userName.innerText = user.displayName;
+                carregarConteudoAdmin(); // Carrega os dados visuais
+            } else {
+                btnLogin.style.display = 'block';
+                userInfo.style.display = 'none';
+                chatList.innerHTML = "<p><em>Autentique-se para ver as mensagens simuladas...</em></p>";
+                document.getElementById('admin-product-list').innerHTML = "";
+            }
+        });
+
+        // --- CARREGAR CONTEÚDO VISUAL (ESTÁTICO) ---
+        function carregarConteudoAdmin() {
+            // 1. Simular Lista de Chats
+            chatList.innerHTML = `
+                <div class="chat-item"><strong>Cliente João:</strong> Olá, tenho uma dúvida...</div>
+                <div class="chat-item"><strong>Cliente Maria:</strong> Qual o prazo de entrega?</div>
+            `;
+
+            // 2. Carregar Produtos Estáticos (Definidos no app.js)
+            const adminProductList = document.getElementById('admin-product-list');
+            adminProductList.innerHTML = "";
+            produtosEstaticos.forEach(p => {
+                adminProductList.innerHTML += `
+                    <div class="product-card-admin">
+                        <img src="${p.img}" alt="${p.nome}" width="50">
+                        <div>
+                            <h4>${p.nome}</h4>
+                            <p>R$ ${p.preco.toFixed(2)}</p>
+                            <a href="${p.link_compra}" target="_blank" class="link-externo">Link de Compra</a>
+                        </div>
+                    </div>
+                `;
+            });
+        }
     </script>
 </body>
 </html>
