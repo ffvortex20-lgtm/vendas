@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>VORTEX - Admin</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="admin-body">
+    <h1>Painel Administrativo VORTEX</h1>
+    
+    <section class="add-product">
+        <h3>Adicionar Produto</h3>
+        <input type="text" id="prod-nome" placeholder="Nome do Produto">
+        <input type="number" id="prod-preco" placeholder="Preço (R$)">
+        <input type="text" id="prod-img" placeholder="Link da Imagem">
+        <button id="btn-salvar">Postar Produto</button>
+    </section>
+
+    <section>
+        <h3>Gerenciar Loja</h3>
+        <div id="admin-lista-produtos"></div>
+    </section>
+
+    <script src="app.js"></script>
+    <script>
+        // Lógica específica para salvar no banco
+        document.getElementById('btn-salvar')?.addEventListener('click', () => {
+            const nome = document.getElementById('prod-nome').value;
+            const preco = document.getElementById('prod-preco').value;
+            const img = document.getElementById('prod-img').value;
+
+            db.collection("produtos").add({
+                nome: nome,
+                preco: parseFloat(preco),
+                imagem: img,
+                data: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => alert("Produto enviado!"));
+        });
+    </script>
+</body>
+</html>
