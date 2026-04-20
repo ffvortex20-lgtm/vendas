@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>VORTEX Login</title>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+</head>
+<body style="background:#0a0a0a;color:white;text-align:center;">
+  <h1>VORTEX</h1>
+  <button onclick="loginGoogle()">Entrar com Google</button>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBBKBd39B0q45eUFgNPwaNhBxZb2xCl8jE",
+  authDomain: "sitevendas-26cf6.firebaseapp.com",
+  projectId: "sitevendas-26cf6",
+  storageBucket: "sitevendas-26cf6.firebasestorage.app",
+  messagingSenderId: "295196585038"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+function loginGoogle(){
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider)
+  .then(()=> window.location.href = "loja.html")
+}
+</script>
+</body>
+</html>
+
